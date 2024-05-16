@@ -3,6 +3,11 @@
 import ipaddress
 import json
 
+#add below in yml file
+#ansible_ssh_common_args: '-o PreferredAuthentications=gssapi-with-mic,gssapi-keyex,hostbased,publickey'
+#ansible_ssh_extra_args: '-o GSSAPIAuthentication=yes -o GSSAPIDelegateCredentials=yes'
+
+
 def generate_inventory(subnets):
     inventory = {"all": {"hosts": []}}
 
