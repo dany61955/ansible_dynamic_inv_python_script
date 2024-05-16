@@ -3,9 +3,9 @@
 import ipaddress
 import json
 
-#add below in yml file
-#ansible_ssh_common_args: '-o PreferredAuthentications=gssapi-with-mic,gssapi-keyex,hostbased,publickey'
-#ansible_ssh_extra_args: '-o GSSAPIAuthentication=yes -o GSSAPIDelegateCredentials=yes'
+#add below in nano ~/.ssh/config file
+# Host *
+#     Ciphers +aes256-cbc,aes192-cbc,aes128-cbc,3des-cbc,blowfish-cbc,cast128-cbc,arcfour,arcfour128,arcfour256
 
 
 def generate_inventory(subnets):
