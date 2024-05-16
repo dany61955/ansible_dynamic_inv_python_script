@@ -1,25 +1,29 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-import sys
+import ipaddress
+import json
 
-# Define your IP subnets and ranges here
-subnets_and_ranges = [
-    "192.168.1.0/24",
-    "10.0.0.0/8"
-]
+def generate_inventory(subnets):
+    inventory = {"all": {"hosts": []}}
 
-# Generate inventory dynamically
-inventory = {
-    "all": {
-        "hosts": []
-    }
-}
+    for subnet in subnets:
+        network = ipaddress.ip_network(subnet)
+        for host in network.hosts():
+            inventory["all"]["hosts"].append(str(host))
 
-for subnet_or_range in subnets_and_ranges:
-    # Logic to generate hosts within the subnet or range
-    # You can use IP address manipulation libraries like ipaddress in Python
-    # For simplicity, we'll just add the subnet or range itself
-    inventory["all"]["hosts"].append(subnet_or_range)
+    return inventory
 
-# Output the inventory as JSON
-print(json.dumps(inventory))
+def main():
+    # List of IP subnets and ranges
+    subnets = [
+        "192.168.1.0/24",
+        "10.0.0.0/16",
+        "172.16.0.0/20"
+        # Add more subnets here if needed
+    ]
+
+    inventory = generate_inventory(subnets)
+    print(json.dumps(inventory, indent=4))
+
+if __name__ == "__main__":
+    main()
