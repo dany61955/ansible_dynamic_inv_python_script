@@ -1,0 +1,23 @@
+---
+- name: Collect Facts and Generate CSV
+  hosts: all
+  gather_facts: no
+
+  tasks:
+    - name: Collect Facts
+      gather_facts: yes
+
+    - name: Save Facts to CSV
+      local_action:
+        module: template
+        content: |
+          IP,Connection Status
+          {% for host in ansible_play_hosts_all %}
+          {% set hostvars = hostvars[host] %}
+          {% if 'ansible_connection' in hostvars %}
+          "{{ hostvars['ansible_host'] }}","{{ hostvars['ansible_connection'] }}","{{ 'Success' if hostvars['ansible_failed'] == false else 'Failed: ' ~ hostvars['ansible_failed'] }}"
+          {% endif %}
+          {% endfor %}
+        dest: facts.csv
+      delegate_to: localhost
+
