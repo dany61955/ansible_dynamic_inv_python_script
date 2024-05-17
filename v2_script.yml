@@ -9,14 +9,9 @@
     ssh_timeout: 10
 
   tasks:
-    - name: Scan network and gather facts
-      nmap:
-        targets: "{{ network_range }}"
-        ports: "22"
-        tasks:
-          - name: ssh
-            service: "ssh"
-      register: scan_result
+    - name: Scan network for ICMP ping and SSH port (22)
+      ansible.builtin.raw: "nmap -sn -PS -p 22 --open -oG - {{ network_range }}"
+      register: nmap_output
 
     - name: Generate report
       ansible.builtin.file:
@@ -30,30 +25,33 @@
 
     - name: Loop through scan results
       ansible.builtin.block:
-        - name: Wait for SSH port to be open
+        - name: Parse nmap output
+          ansible.builtin.set_fact:
+            scan_results: "{{ nmap_output.stdout_lines | select('match', '^Host:\\s*(.*)\\s*\\((.*)\\)\\s*Status:\\s*(.*)$') | map('regex_replace', '^Host:\\s*(.*)\\s*\\((.*)\\)\\s*Status:\\s*(.*)$', '\\1,\\2,\\3') | list }}"
+
+        - name: Wait for ping response
           ansible.builtin.wait_for:
-            host: "{{ item.item }}"
-            port: 22
+            host: "{{ item.split(',')[1] }}"
             state: started
             delay: 5
             timeout: "{{ ssh_timeout }}"
-          loop: "{{ scan_result.scan }}"
+          loop: "{{ scan_results }}"
 
         - name: Get hostname via SSH
           ansible.builtin.expect:
-            command: ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null user@{{ item.item }} hostname
+            command: ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 -o UserKnownHostsFile=/dev/null user@{{ item.split(',')[1] }} hostname
             responses:
               'assword': "{{ ssh_password }}"
           delegate_to: localhost
           register: hostname_output
           changed_when: false
           failed_when: false
-          loop: "{{ scan_result.scan }}"
+          loop: "{{ scan_results }}"
           vars:
             ssh_password: "your_ssh_password"  # You may need to provide SSH password or use SSH keys
 
         - name: Write scan results to the report
           ansible.builtin.lineinfile:
             path: "{{ output_file }}"
-            line: "{{ item.item }},{{ item.stdout_lines[0] if item.rc == 0 else 'N/A' }},{{ 'Success' if 'ssh' in item.item.ports_results else 'Failure' }},{{ item.stdout_lines[0] if item.rc == 0 else 'N/A' }}"
+            line: "{{ item.split(',')[1] }},{{ item.split(',')[0] }},{{ 'Success' if item.split(',')[2] == 'Up' else 'Failure' }},{{ 'Success' if 'ssh' in item.split(',')[3] else 'Failure' }}"
           loop: "{{ hostname_output.results }}"
