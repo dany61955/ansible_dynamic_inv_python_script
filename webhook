@@ -1,0 +1,35 @@
+    - name: Send Microsoft Teams Webhook
+      command: >
+        curl -X POST \
+        -H 'Content-Type: application/json' \
+        -d '{
+          "type": "message",
+          "attachments": [
+            {
+              "contentType": "application/vnd.microsoft.card.adaptive",
+              "content": {
+                "type": "AdaptiveCard",
+                "body": [
+                  {
+                    "type": "TextBlock",
+                    "text": "Summary of the message",
+                    "weight": "bolder",
+                    "size": "medium"
+                  },
+                  {
+                    "type": "TextBlock",
+                    "text": "This is the body of the message with a mention <at>user1</at>.",
+                    "wrap": true
+                  }
+                ],
+                "mentions": [
+                  {
+                    "type": "mention",
+                    "text": "<at>user1</at>"
+                  }
+                ]
+              }
+            }
+          ]
+        }' \
+        YOUR_MICROSOFT_TEAMS_WEBHOOK_URL
